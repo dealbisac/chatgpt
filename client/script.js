@@ -8,15 +8,17 @@ let loadInterval;
 
 // Loader function while AI is thinking
 function loader(element) {
-  element.textContent = '';
+  element.textContent = ''
+
   loadInterval = setInterval(() => {
-    element.textContent += '.';
+      // Update the text content of the loading indicator
+      element.textContent += '.';
 
-
-    if (element.textContent.length === '....') {
-      element.textContent = '';
-    }
-  }, 300)
+      // If the loading indicator has reached three dots, reset it
+      if (element.textContent === '....') {
+          element.textContent = '';
+      }
+  }, 300);
 }
 
 // Function to create a new message and append it to the chat container
@@ -32,7 +34,9 @@ function typeText(element, text) {
   }, 20)
 }
 
-// Function to create a unique ID for each message
+// Function to generate unique ID for each message div of bot
+// necessary for typing text effect for that specific reply
+// without unique ID, typing text will work on every element
 function generateUniqueId() {
   const timestamp = Date.now();
   const randomNumber = Math.random();
@@ -84,12 +88,38 @@ const handleSubmit = async (e) => {
 
   // messageDiv.innerHTML = "..."
   loader(messageDiv)
+
+  // fetch the response from the server - AI response
+  const response = await fetch('http://localhost:5000', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt: data.get('prompt')
+    })
+  })
+
+  clearInterval(loadInterval)
+  messageDiv.innerHTML = " "
+
+  if (response.ok) {
+    const data = await response.json();
+    const parsedData = data.bot.trim() // trims any trailing spaces/'\n' 
+
+    typeText(messageDiv, parsedData)
+  } else {
+    const err = await response.text()
+
+    messageDiv.innerHTML = "Something went wrong"
+    alert(err)
+  }
 }
 
 // Event listener for the form
 form.addEventListener('submit', handleSubmit)
 form.addEventListener('keyup', (e) => {
-    if (e.keyCode === 13) {
-        handleSubmit(e)
-    }
+  if (e.keyCode === 13) {
+    handleSubmit(e)
+  }
 })
